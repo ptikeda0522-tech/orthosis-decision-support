@@ -118,13 +118,13 @@ Googleフォームを作成したら、共有URLをコピーします。
 `index.html` の下記部分を探します。
 
 ```js
-const FEEDBACK_FORM_URL = "";
+const FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScin42L7aQNAwfy_49bJjxTXf4iHvB1DH0oOfFRb_92nHtbqg/viewform";
 ```
 
 次のようにURLを貼り付けます。
 
 ```js
-const FEEDBACK_FORM_URL = "https://forms.gle/xxxxxxxxxxxx";
+const FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScin42L7aQNAwfy_49bJjxTXf4iHvB1DH0oOfFRb_92nHtbqg/viewform";
 ```
 
 これでアプリ内の「フォームを開く」ボタンからフォームへ移動できます。
@@ -155,6 +155,5 @@ const FEEDBACK_FORM_URL = "https://forms.gle/xxxxxxxxxxxx";
 ここにGitHub PagesのURLを貼る
 
 フィードバックフォーム:
-ここにGoogleフォームのURLを貼る
+https://docs.google.com/forms/d/e/1FAIpQLScin42L7aQNAwfy_49bJjxTXf4iHvB1DH0oOfFRb_92nHtbqg/viewform
 ```
-
