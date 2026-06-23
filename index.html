@@ -28,6 +28,15 @@
       border-left: 4px solid #2563eb;
     }
 
+    .course-section[hidden] {
+      display: none;
+    }
+
+    .course-lock {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .option-card {
         transition: none;
@@ -105,6 +114,10 @@
                 </div>
               </div>
 
+              <div id="courseNotice" class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-600">
+                BRSを選択すると、必要な評価コースだけが表示されます。選択済みのラジオボタンは、もう一度タップすると未選択に戻せます。
+              </div>
+
               <div>
                 <p class="mb-2 font-bold">高次脳機能障害・Pusher・USN</p>
                 <div class="grid gap-3 sm:grid-cols-3">
@@ -128,7 +141,7 @@
             </div>
           </section>
 
-          <section class="rounded-lg border border-slate-200 bg-white p-5">
+          <section id="kafoCourseSection" class="course-section rounded-lg border border-slate-200 bg-white p-5" hidden>
             <div class="mb-4 flex items-center justify-between gap-3">
               <h2 class="text-lg font-black">2. KAFOコース評価</h2>
               <span class="rounded-full bg-cyan-100 px-3 py-1 text-xs font-black text-cyan-800">BRS II以下・支持性低下</span>
@@ -195,7 +208,7 @@
             </div>
           </section>
 
-          <section class="rounded-lg border border-slate-200 bg-white p-5">
+          <section id="afoCourseSection" class="course-section rounded-lg border border-slate-200 bg-white p-5" hidden>
             <div class="mb-4 flex items-center justify-between gap-3">
               <h2 class="text-lg font-black">3. AFOコース評価</h2>
               <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-black text-orange-800">BRS III以上</span>
@@ -378,6 +391,9 @@
     const copyResultBtn = document.getElementById("copyResultBtn");
     const copyStatus = document.getElementById("copyStatus");
     const feedbackFormLink = document.getElementById("feedbackFormLink");
+    const kafoCourseSection = document.getElementById("kafoCourseSection");
+    const afoCourseSection = document.getElementById("afoCourseSection");
+    const courseNotice = document.getElementById("courseNotice");
     let latestResultSummary = "";
 
     const labelMaps = {
@@ -419,7 +435,7 @@
       const always = ["brs", "cognition"];
       const kafo = ["staticStand", "romContracture", "instruction"];
       const afo = ["activity", "nonPareticExtension", "pareticExtension", "pareticControl"];
-      const required = inputs.brs === "le2" || inputs.staticStand === "unable" ? always.concat(kafo) : always.concat(afo);
+      const required = inputs.brs === "le2" ? always.concat(kafo) : always.concat(afo);
       return required.filter((key) => !inputs[key]);
     }
 
@@ -459,10 +475,11 @@
 
       /*
         参考アルゴリズムの最初の大分岐:
-        BRS II以下、または非麻痺側上肢支持でも静止立位が不可なら、
+        BRS II以下なら、
         AFO単独よりも膝を含めた支持性を確保するKAFOコースを優先する。
+        BRS III以上では、誤入力防止のためAFOコースのみを表示・判定する。
       */
-      if (inputs.brs === "le2" || inputs.staticStand === "unable") {
+      if (inputs.brs === "le2") {
         result = judgeKafoCourse(inputs);
       } else {
         result = judgeAfoCourse(inputs);
@@ -833,6 +850,70 @@
 
     judgeBtn.addEventListener("click", judgeOrthosis);
 
+    function clearInputs(section) {
+      section.querySelectorAll("input").forEach((input) => {
+        input.checked = false;
+      });
+    }
+
+    function setCourseEnabled(section, enabled) {
+      section.hidden = !enabled;
+      section.classList.toggle("course-lock", !enabled);
+      section.querySelectorAll("input").forEach((input) => {
+        input.disabled = !enabled;
+      });
+
+      if (!enabled) {
+        clearInputs(section);
+      }
+    }
+
+    function updateCourseVisibility() {
+      const brs = getRadioValue("brs");
+
+      if (!brs) {
+        setCourseEnabled(kafoCourseSection, false);
+        setCourseEnabled(afoCourseSection, false);
+        courseNotice.className = "rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm font-bold text-slate-600";
+        courseNotice.textContent = "BRSを選択すると、必要な評価コースだけが表示されます。選択済みのラジオボタンは、もう一度タップすると未選択に戻せます。";
+        return;
+      }
+
+      const isKafoCourse = brs === "le2";
+      setCourseEnabled(kafoCourseSection, isKafoCourse);
+      setCourseEnabled(afoCourseSection, !isKafoCourse);
+
+      if (isKafoCourse) {
+        courseNotice.className = "rounded-lg border border-cyan-200 bg-cyan-50 p-4 text-sm font-bold text-cyan-900";
+        courseNotice.textContent = "BRS II以下のため、KAFOコース評価のみ入力できます。AFOコース評価は誤入力防止のため非表示にしました。";
+      } else {
+        courseNotice.className = "rounded-lg border border-orange-200 bg-orange-50 p-4 text-sm font-bold text-orange-900";
+        courseNotice.textContent = "BRS III以上のため、AFOコース評価のみ入力できます。KAFOコース評価は誤入力防止のため非表示にしました。";
+      }
+    }
+
+    function enableRadioToggleOff() {
+      document.querySelectorAll('input[type="radio"]').forEach((radio) => {
+        radio.addEventListener("pointerdown", () => {
+          radio.dataset.wasChecked = radio.checked ? "true" : "false";
+        });
+
+        radio.addEventListener("click", () => {
+          if (radio.dataset.wasChecked === "true") {
+            radio.checked = false;
+            radio.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          radio.dataset.wasChecked = "false";
+        });
+      });
+    }
+
+    form.addEventListener("change", (event) => {
+      if (event.target.name === "brs") {
+        updateCourseVisibility();
+      }
+    });
+
     copyResultBtn.addEventListener("click", async () => {
       if (!latestResultSummary) {
         copyStatus.textContent = "先に判定を実行してください。";
@@ -851,6 +932,7 @@
       form.reset();
       latestResultSummary = "";
       copyStatus.textContent = "";
+      updateCourseVisibility();
       resultArea.innerHTML = `
         <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
           <p class="text-slate-600">左側の評価項目を入力し、「判定する」を押してください。</p>
@@ -861,6 +943,9 @@
     if (FEEDBACK_FORM_URL) {
       feedbackFormLink.href = FEEDBACK_FORM_URL;
     }
+
+    enableRadioToggleOff();
+    updateCourseVisibility();
   </script>
 </body>
 </html>
